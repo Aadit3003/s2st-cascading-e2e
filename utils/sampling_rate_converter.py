@@ -1,4 +1,9 @@
+""" This module contains the function that is used to enforce a 16Khz
+sampling rate for all files in the dev source dataset.
+"""
+
 import os
+
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 from multiprocessing import Pool

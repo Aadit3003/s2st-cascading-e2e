@@ -1,3 +1,10 @@
+""" This module contains the function to macro average the Translation metrics
+across all the samples in the dev dataset. 
+
+It is used after running either of the inference modules 
+(forward_feed_cascaded_finetuned.py or forward_feed_cascaded_oob.py)
+"""
+
 import pandas as pd
 import os
 import numpy as  np

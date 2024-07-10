@@ -1,28 +1,33 @@
+""" This is one of the main modules and contains the code to forward-feed 
+the Cascaded S2ST model (the model fine-tuned on CVSS-C).
 
+These functions are used to generate the translation files for the dev set
+while comparing to the end-to-end system. They are also reused in the 
+live_s2st_demontration module.
+"""
 import numpy as np
 import pandas as pd
-import espnetez as ez
-
-import torch
-import gradio as gr
-import librosa
-import os
-from espnet2.bin.s2t_inference_language import Speech2Language
-from espnet2.bin.s2t_inference import Speech2Text
-
-if not torch.cuda.is_available():
-    raise RuntimeError("Please use GPU for better inference speed.")
 import glob
 import os
-import kaldiio
 import string
 
+import kaldiio
+import gradio as gr
+import librosa
+import torch
+import espnetez as ez
+from espnet2.bin.s2t_inference_language import Speech2Language
+from espnet2.bin.s2t_inference import Speech2Text
 from espnet2.bin.tts_inference import Text2Speech
 from espnet2.utils.types import str_or_none
 from sacrebleu.metrics import BLEU
-
 from espnet_model_zoo.downloader import ModelDownloader
 from espnet2.bin.asr_inference import Speech2Text as asr
+
+
+
+if not torch.cuda.is_available():
+    raise RuntimeError("Please use GPU for better inference speed.")
 
 tag = "asapp/e_branchformer_librispeech"
 

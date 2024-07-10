@@ -1,7 +1,24 @@
+""" This module contains the code to fine-tune the Cascaded S2ST system on the
+CVSS-C dataset.
+
+This is done prior to running the forward_feed_cascaded_finetuned.py script, to 
+ensure a fairer comparison with the end-to-end model (pre-trained on CVSS-C).
+"""
+import pandas as pd
+import numpy as np
+
+import torch
+import espnetez as ez
+from espnet2.bin.s2t_inference_language import Speech2Language
+from espnet2.bin.s2t_inference import Speech2Text
+from espnet2.layers.create_adapter_fn import create_lora_adapter
+from espnet2.bin.tts_inference import Text2Speech
+from espnet2.utils.types import str_or_none
+from datasets import load_dataset, Audio
 
 text_file = "/data/shire/data/aaditd/speech_data/source_dataset/covost_v2.es_en.tsv"
 #load text file into a pandas dataframe with path as the id
-import pandas as pd
+
 text_df = pd.read_csv(text_file, sep="\t")
 text_df = text_df.set_index("path")
 #print out "common_voice_es_19600147.mp3"
@@ -11,7 +28,7 @@ text_df = text_df.set_index("path")
 """EVAN LOOK HERE:|{'audio': {'path': '/home/efellman/speech_proj/data/dev/common_voice_es_18308858.mp3.wav', 'array': array([ 2.97360644e-03,  4.32699605e-03,  4.34680204e-03, ...,
        -8.11031307e-10,  5.98494003e-09, -8.77921745e-09]), 'sampling_rate': 16000}, 'label': None}|"""
 print("Loading Dataset")
-from datasets import load_dataset, Audio
+
 train_dataset = load_dataset("audiofolder", data_dir=f"/data/shire/data/aaditd/speech_data/source_dataset/clips_16", split="train[:800]")
 valid_dataset = load_dataset("audiofolder", data_dir=f"/data/shire/data/aaditd/speech_data/source_dataset/clips_16", split="train[800:1000]")
 print("Finished loading data.")
@@ -29,33 +46,23 @@ data_info = {
     "text_prev": lambda d: tokenize("<na>"),
     "text_ctc": lambda d: tokenize(text_df.loc[path_to_path(d['audio']['path'])]['translation']),
 }
-import numpy as np
+
 
 def tokenize(text):
     return np.array(converter.tokens2ids(tokenizer.text2tokens(text)))
-import espnetez as ez
+
 
 if not isinstance(train_dataset, ez.dataset.ESPnetEZDataset):
   train_dataset = ez.dataset.ESPnetEZDataset(train_dataset, data_info=data_info)
   valid_dataset = ez.dataset.ESPnetEZDataset(valid_dataset, data_info=data_info)
 print("Finished preparing data.")
-import torch
-import gradio as gr
-import librosa
-import os
-from espnet2.bin.s2t_inference_language import Speech2Language
-from espnet2.bin.s2t_inference import Speech2Text
+
 
 if not torch.cuda.is_available():
     raise RuntimeError("Please use GPU for better inference speed.")
-import glob
-import os
-import kaldiio
-from espnet2.layers.create_adapter_fn import create_lora_adapter
 
 
-from espnet2.bin.tts_inference import Text2Speech
-from espnet2.utils.types import str_or_none
+
 
 
 model_tag = "espnet/owsm_v3.1_ebf"

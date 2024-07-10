@@ -1,20 +1,26 @@
+""" This module contains the code for the live demonstration of the 
+S2ST (Speech-to-Speech Translation) system, for a single soundfile (either the path may be specified
+or it may be recorded live).
 
+It uses the forward_feed functions for the E2E and Cascaded models (both out-of-box and fine-tuned),
+on the soundfile and returns the translated .wav files, as well as a csv file with
+the five Speech Translation metrics (ASR-BLEU, COMET, METEOR, BLASER-2.0) specified in the expanded_translation_metrics module.
+"""
 import numpy as np
 import pandas as pd
-import espnetez as ez
-import torch
-import gradio as gr
 import librosa
 import time
 import glob
 import os
-import kaldiio
 import string
 from string import punctuation
+
+import gradio as gr
+import kaldiio
 import soundfile as sf
-
+import torch
+import espnetez as ez
 from espnet_model_zoo.downloader import ModelDownloader
-
 from espnet2.bin.s2t_inference import Speech2Text
 from espnet2.bin.asr_inference import Speech2Text as asr
 from espnet2.bin.s2t_inference_language import Speech2Language
@@ -22,13 +28,12 @@ from espnet2.bin.tts_inference import Text2Speech
 from espnet2.utils.types import str_or_none
 from s2st_inference import Speech2Speech
 from espnet2.layers.create_adapter_fn import create_lora_adapter
-
-
 import evaluate
 from sonar.inference_pipelines.text import TextToEmbeddingModelPipeline
 from sonar.models.blaser.loader import load_blaser_model
-from aadit_metrics import comet_score_vector, blaser_score_vector, meteor_score
 from sacrebleu.metrics import BLEU
+
+from expanded_translation_metrics import comet_score_vector, blaser_score_vector, meteor_score
 
 
 
@@ -73,7 +78,7 @@ def get_stuff(string):
 
 
 def get_all_metrics(source_texts, ref_texts, pred_texts, bleu, blaser, text_embedder, meteor, comet):
-   list_asr_bleu = [get_stuff(str(  bleu.sentence_score(text_normalizer(p), [text_normalizer(r)]) )  ) for p, r in zip(pred_texts, ref_texts)]
+   list_asr_bleu = [get_stuff(str(bleu.sentence_score(text_normalizer(p), [text_normalizer(r)]) )  ) for p, r in zip(pred_texts, ref_texts)]
    list_comet = comet_score_vector(pred_texts, ref_texts, source_texts, comet)
    list_meteor = [meteor_score(p, r, meteor) for p, r in zip(pred_texts, ref_texts)]
    list_blaser = blaser_score_vector(source_texts=source_texts, pred_texts=pred_texts, blaser=blaser, text_embedder=text_embedder)

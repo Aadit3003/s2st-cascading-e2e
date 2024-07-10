@@ -1,11 +1,21 @@
-from sonar.inference_pipelines.text import TextToEmbeddingModelPipeline
-from sonar.models.blaser.loader import load_blaser_model
+""" This module contains the functions used to compute the following Speech
+Translation metrics:- COMET, METEOR, BLASER.
+
+These are in addition to the ASR-BLEU score that is calculated in the forward_feed
+or live_s2st_demonstration modules. This module is called after inferencing the S2ST
+system and is used to create a csv file with all 4 metrics for each sample in the dev
+dataset.
+"""
+import numpy as np
 import pandas as pd
 from string import punctuation
 import string
-import evaluate
-import numpy as np
 import os
+
+from sonar.inference_pipelines.text import TextToEmbeddingModelPipeline
+from sonar.models.blaser.loader import load_blaser_model
+import evaluate
+
 
 DEV_SOURCE_PATH = "/home/aaditd/2_Speech_Project/dev_source.tsv"
 DEV_TARGET_PATH = "/home/aaditd/2_Speech_Project/dev_target.tsv"
