@@ -9,60 +9,51 @@ import pandas as pd
 import os
 import numpy as  np
 
-# PREFIX_1 = "/home/aaditd/2_Speech_Project/results/e2e_results/"
-# PREFIX_2 = "/home/aaditd/2_Speech_Project/results/casc_results/"
-# RESULTS_PATH_1 = "/home/aaditd/2_Speech_Project/results/e2e_results/e2e_output_final.csv"
-# RESULTS_PATH_2 = "/home/aaditd/2_Speech_Project/results/casc_results/casc_output_final.csv"
-# PATH = "/home/aaditd/2_Speech_Project/frog.csv"
-
-# df1 = pd.read_csv(RESULTS_PATH_1)
-# df2 = pd.read_csv(RESULTS_PATH_2)
-# df = pd.read_csv(PATH)
-
-def get_ASR_BLEU(df):
-    asr_long_list = df["ASR_BLEU"]
-
-    comet_list = [float(a) for a in df["COMET"]]
-    meteor_list = [float(a) for a in df["METEOR"]]
-    blaser_list = [float(a) for a in df["BLASER"]]
-
-    def get_stuff(string):
-        parts = string.split(" ")
+def segment_bleu_score_string(bleu_score_string):
+        parts = bleu_score_string.split(" ")
         main_score = float(parts[2])
         other_scores = [float(p) for p in parts[3].split("/")]
         bp = float(parts[6])
         ratio = float(parts[9])
-        # print(main_score, bp)
+        
         return (main_score, bp, ratio)
-        return parts, (main_score, other_scores, bp, ratio)
+    
+def get_ASR_BLEU(s2st_model_inference_results_df):
+    
+    asr_bleu_score_string_list = s2st_model_inference_results_df["ASR_BLEU"]
 
-    # a, b = get_stuff(asr_long_list[0])
-    # print(a)
-    # print(b)
-
-
-    MAIN_LIST = [get_stuff(s)[0] for s in asr_long_list]
-    BP_LIST = [get_stuff(b)[1] for b in asr_long_list]
-    R_LIST = [get_stuff(b)[2] for b in asr_long_list]
-    # print(BP_LIST)
+    comet_list = [float(a) for a in s2st_model_inference_results_df["COMET"]]
+    meteor_list = [float(a) for a in s2st_model_inference_results_df["METEOR"]]
+    blaser_list = [float(a) for a in s2st_model_inference_results_df["BLASER"]]
 
 
-    avg_asr = round(np.sum(MAIN_LIST) / len(MAIN_LIST), 3)
-    avg_bp = round(np.sum(BP_LIST) / len(BP_LIST), 3)
-    avg_ratio = round(np.sum(R_LIST) / len(R_LIST), 3)
+
+    bleu_score_list = [segment_bleu_score_string(s)[0] for s in asr_bleu_score_string_list]
+    brevity_penalty_list = [segment_bleu_score_string(b)[1] for b in asr_bleu_score_string_list]
+    hypothesis_reference_ratio_list = [segment_bleu_score_string(b)[2] for b in asr_bleu_score_string_list]
+
+
+
+    avg_bleu = round(np.sum(bleu_score_list) / len(bleu_score_list), 3)
+    avg_bp = round(np.sum(brevity_penalty_list) / len(brevity_penalty_list), 3)
+    avg_ratio = round(np.sum(hypothesis_reference_ratio_list) / len(hypothesis_reference_ratio_list), 3)
 
     avg_comet = round(np.sum(comet_list) / len(comet_list), 3)
     avg_meteor = round(np.sum(meteor_list) / len(meteor_list), 3)
     avg_blaser = round(np.sum(blaser_list) / len(blaser_list), 3)
 
-    return avg_asr, avg_bp, avg_ratio, avg_comet, avg_meteor, avg_blaser
+    return avg_bleu, avg_bp, avg_ratio, avg_comet, avg_meteor, avg_blaser
+
+def main():
+    
+    METRICS_DIRECTORY = "./metrics/scored/"
+
+    for file in sorted(os.listdir(METRICS_DIRECTORY)):
+        df = pd.read_csv(METRICS_DIRECTORY+file)
+        avg_asr, avg_bp, avg_ratio, avg_comet, avg_meteor, avg_blaser = get_ASR_BLEU(df)
+        print(f"{file} | ASR_BLEU = {avg_asr} | BP = {avg_bp} | HRR = {avg_ratio} | COMET = {avg_comet} | METEOR = {avg_meteor} | BLASER = {avg_blaser}")
 
 
-FOLDER = "/home/aaditd/2_Speech_Project/metrics/scored/"
-
-
-for file in sorted(os.listdir(FOLDER)):
-    df = pd.read_csv(FOLDER+file)
-    avg_asr, avg_bp, avg_ratio, avg_comet, avg_meteor, avg_blaser = get_ASR_BLEU(df)
-    print(f"{file} | ASR_BLEU = {avg_asr} | BP = {avg_bp} | HRR = {avg_ratio} | COMET = {avg_comet} | METEOR = {avg_meteor} | BLASER = {avg_blaser}")
-
+if __name__ == "__main__":
+    main()
+    

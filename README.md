@@ -22,9 +22,9 @@ Run the Demo
 
 ## TO DO
 
-1. Rename the files
-2. Write File description docstrings
-3. Write Function description docstrings
-4. Cleanup Code - Main Function, paths, function names etc.
+1. Rename the files (DONE)
+2. Write File description docstrings (DONE)
+3. Cleanup Code - Main Function, paths, function names etc.
+4. Write Function description docstrings
 5. Create bash scripts directory
 6. Finish writing Readme!
