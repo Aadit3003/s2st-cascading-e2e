@@ -36,6 +36,7 @@ from sacrebleu.metrics import BLEU
 from expanded_translation_metrics import comet_score_vectorized, blaser_score_vectorized, meteor_score_vectorized
 from utils.macro_average_results import segment_bleu_score_string
 from forward_feed_cascaded_finetuned_oob import forwadrd_cascaded_model, text_normalizer
+from forward_feed_e2e import forward_e2e_model
 
 # CONSTANTS
 
