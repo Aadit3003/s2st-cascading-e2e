@@ -1,15 +1,16 @@
 # A comparison of E2E and Cascading Speech-to-Speech translation systems (ES-EN)
-In this project, we evaluate end-to-end and cascading speech-to-speech translation (S2ST) systems on the CVSS-C Spanish-English dataset. We measure any differences in performance using a suite of evaluation metrics like COMET, METEOR, and BLASER 2.0 that go beyond n-gram overlap metrics like BLEU. To establish a baseline, we used the untuned pre-trained **OWSM 3.1 model** from ESPNet S2T model with the **fastspeech2 conformer** from ESPNet and the fastspeech2 conformer hifigan vocoder for the cascading system. For the end-to-end model, we used an **untuned discrete-unit** S2ST ESPNet model **pre-trained** on a Spanish-to-English subset of the CVSS-C dataset with a Parallel WaveGAN huBERT vocoder to synthesize the output speech. We then chose to fine-tune our cascading system on CVSS-C data (for better comparison between the e2e and cascading systems) using LoRA (rank 4) for 10 epochs.
+In this project, we evaluate end-to-end and cascading speech-to-speech translation (S2ST) systems on the CVSS-C Spanish-English dataset. We measure any differences in performance using a suite of evaluation metrics like COMET, METEOR, and BLASER 2.0 that go beyond n-gram overlap metrics like BLEU. To establish a baseline, we used the untuned pre-trained **OWSM 3.1 model** from ESPNet S2T model with the **fastspeech2 conformer** from ESPNet and the fastspeech2 conformer hifigan vocoder for the cascading system. For the end-to-end system, we used an **untuned discrete-unit** S2ST ESPNet model **pre-trained** on a Spanish-to-English subset of the CVSS-C dataset with a Parallel WaveGAN huBERT vocoder to synthesize the output speech. We then chose to fine-tune our cascading system on CVSS-C data (for better comparison between the e2e and cascading systems) using LoRA (rank 4) for 10 epochs.
 
 This project was completed under the guidance of Prof. Shinji Watanabe, at LTI, CMU. For more details refer to the [project report](https://github.com/Aadit3003/s2st-cascading-e2e/blob/8a1be02494e6ecac6c0db413026a399bdf916a9b/report.pdf).
 
 
 ## Results
-Comparison of the performance of E2E and Cascading S2ST Models on the CVSS-C Spanish-to-English test set. e2e-oob is outof-
-the-box end-to-end model. casc-oob is out-of-the-box cascading model. casc-ft models are the fine-tuned (via LoRA) cascading models:
+Comparison of the performance of E2E and Cascading S2ST Models on the CVSS-C Spanish-to-English test set. The baselines:- e2e-oob is the out-of-
+the-box end-to-end model and casc-oob is out-of-the-box cascading model. casc-ft models are the fine-tuned (via LoRA) cascading models:
 casc-ft-best (learning rate 1e-5, epoch 3); casc-ft-1-epoch (learning rate 1e-5, epoch 1); casc-ft-5-epoch (learning rate 1e-5, epoch 5); and
-casc-ft-low-lr (learning rate 1e-7, epoch 1). BP is Brevity Penalty (scale 0-1), HRR is Hypothesis to Reference ratio (scale 0-1); ASR-BLEU
-(scale 1-100), COMET (scale 0-1), METEOR (scale 0-1), and BLASER2.0 (scale 1-5) are metrics described in Section 3.0 above.
+casc-ft-low-lr (learning rate 1e-7, epoch 1). \
+
+_BP is Brevity Penalty (scale 0-1), HRR is Hypothesis to Reference ratio (scale 0-1); ASR-BLEU (scale 1-100), COMET (scale 0-1), METEOR (scale 0-1), and BLASER2.0 (scale 1-5)_
 
 | Model           | ASR-BLEU      | BP            | HRR            | COMET          | METEOR         | BLASER2.0      |
 |-----------------|---------------|---------------|----------------|----------------|----------------|----------------|
