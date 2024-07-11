@@ -23,9 +23,9 @@ Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not inclu
 ## Run Commands
 
 * Environment Setup:
-  * Since this project extensively uses espnet recipes, refer to the following [installation](https://github.com/espnet/espnet) instructions.
+  * Since this project extensively uses espnet recipes, refer to the following [espnet installation](https://github.com/espnet/espnet) instructions.
 * Fine-tune the Cascaded model on CoVoST 2 data:
-  * Download the CoVoST 2 es_en [dataset]((https://huggingface.co/datasets/facebook/covost2)) (edit the corresponding path variable in the script).
+  * Download the [CoVoST](https://huggingface.co/datasets/facebook/covost2/) 2 es_en dataset (edit the corresponding path variable in the script).
   * ```python finetune_s2t.py```
 * Inference the Models on the dev dataset and calculate all metrics
   * Download the appropriate audio files in the CVSS-C es-en dev dataset from the [CommonVoice](https://commonvoice.mozilla.org/en/datasets) release version 4.
