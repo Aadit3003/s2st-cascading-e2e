@@ -1,5 +1,5 @@
-# A comparison of E2E and Cascading Speech-to-Speech translation systems (CVSS-C ES-EN)
-aa
+# A comparison of E2E and Cascading Speech-to-Speech translation systems (ES-EN)
+In this project, we evaluate end-to-end and cascading speech-to-speech translation (S2ST) systems on the CVSS-C Spanish-English dataset. We measure any differences in performance using a suite of evaluation metrics like COMET, METEOR, and BLASER 2.0 that go beyond n-gram overlap metrics like BLEU. To establish a baseline, we used the untuned pre-trained **OWSM 3.1 model** from ESPNet S2T model with the **fastspeech2 conformer** from ESPNet and the fastspeech2 conformer hifigan vocoder for the cascading system. For the end-to-end model, we used an **untuned discrete-unit** S2ST ESPNet model **pre-trained** on a Spanish-to-English subset of the CVSS-C dataset with a Parallel WaveGAN huBERT vocoder to synthesize the output speech. We then chose to fine-tune our cascading system on CVSS-C data (for better comparison between the e2e and cascading systems) using LoRA (rank 4) for 10 epochs.
 
 This project was completed under the guidance of Prof. Shinji Watanabe, at LTI, CMU. For more details refer to the [project report](https://github.com/Aadit3003/s2st-cascading-e2e/blob/8a1be02494e6ecac6c0db413026a399bdf916a9b/report.pdf).
 
