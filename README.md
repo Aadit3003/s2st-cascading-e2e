@@ -17,28 +17,28 @@ This project was completed under the guidance of Prof. Shinji Watanabe, at LTI, 
 aa
 
 ## Directory Structure
-* cvss-c_en_wavegan_hubert_vocoder -
-* dev_dataset -
-* espnet_recipe_scripts -
-* results -
-* tts_multi_speaker_model - 
-* utils -
- * macro_average_results.py -
- * sampling_rate_converter.py - 
+* cvss-c_en_wavegan_hubert_vocoder - Contains the config file for the Vocoder.
+* dev_dataset - Contains TSV filenames for the Source and Target audiofiles and transcripts (CVSS-C dataset).
+* **espnet_recipe_scripts** - espnet recipes for s2st_inference and st_inference.
+* **results** - The csv outputs of the e2e, and cascaded models (oob, finetuned) with all 4 Translation metrics.
+* tts_multi_speaker_model - The exp folder contains the config file for the TTS Model.
+* utils:
+ * macro_average_results.py - The script to macro average the 4 translation metrics across all dev dataset samples.
+ * sampling_rate_converter.py - The script to convert all clips in the input dataset to a 16KHz sampling rate.
 
-  expanded_translation_metrics.py -
-  finetune_s2t.py -
-  forward_feed_cascaded_finetuned_oob.py - 
-  forward_feed_e2e.py - 
-  live_s2st_demonstration.py - 
+  **expanded_translation_metrics.py** - The script to evaluate the prediction texts and return the 4 translation metrics (ASR BLEU, COMET, METEOR, BLASER 2.0)\
+  finetune_s2t.py - The script to finetune the S2T model on the CoVoST dataset.\
+  **forward_feed_cascaded_finetuned_oob.py** - The script to forward-feed the Cascaded S2ST model (oob/finetuned) on the CVSS-C dev dataset (with metrics).\
+  **forward_feed_e2e.py** - The script to forward-feed the End-to-end S2ST model on the CVSS-C dev dataset (with metrics).\
+  live_s2st_demonstration.py - The demonstration that compares the cascaded and end-to-end models on a single audio file.
 
-tts_config.yaml
-lora_config.yaml
+tts_config.yaml - The config file for the Text2Speech model. \
+lora_config.yaml - The config file for the LoRA adapter.
 
-environment.txt
-report.pdf
+environment.txt - The virtual environment packages (with versions) listed explicitly. \
+report.pdf - The report containing details about experimental design and results. 
 
-Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not included due to their size, however all config files are in the respective directories.
+_Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not included due to their size, however all config files are in the respective directories._
 
 ## Run Commands
 
@@ -49,6 +49,7 @@ Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not inclu
   * ```python finetune_s2t.py```
 * Inference the Models on the dev dataset and calculate all metrics
   * Download the appropriate audio files in the CVSS-C es-en dev dataset from the [CommonVoice](https://commonvoice.mozilla.org/en/datasets) release version 4.
+  * Run ```python .utils/sampling_rate_converter.py``` with the appropriate paths.
   * End-to-end model: ```python forward_feed_e2e.py```
   * Cascaded oob model: ```python forward_feed_cascaded_finetuned_oob.py --inference_mode=oob```
   * Cascaded finetuned model: ```python forward_feed_cascaded_finetuned_oob.py --inference_mode=finetuned```
