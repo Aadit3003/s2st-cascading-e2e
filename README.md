@@ -5,16 +5,25 @@ This project was completed under the guidance of Prof. Shinji Watanabe, at LTI, 
 
 
 ## Results
+Comparison of the performance of E2E and Cascading S2ST Models on the CVSS-C Spanish-to-English test set. e2e-oob is outof-
+the-box end-to-end model. casc-oob is out-of-the-box cascading model. casc-ft models are the fine-tuned (via LoRA) cascading models:
+casc-ft-best (learning rate 1e-5, epoch 3); casc-ft-1-epoch (learning rate 1e-5, epoch 1); casc-ft-5-epoch (learning rate 1e-5, epoch 5); and
+casc-ft-low-lr (learning rate 1e-7, epoch 1). BP is Brevity Penalty (scale 0-1), HRR is Hypothesis to Reference ratio (scale 0-1); ASR-BLEU
+(scale 1-100), COMET (scale 0-1), METEOR (scale 0-1), and BLASER2.0 (scale 1-5) are metrics described in Section 3.0 above.
+
 | Model           | ASR-BLEU      | BP            | HRR            | COMET          | METEOR         | BLASER2.0      |
 |-----------------|---------------|---------------|----------------|----------------|----------------|----------------|
-| E2E-oob         | 14.901        | 0.82          | 0.928          | 0.538          | 0.283          | 3.188          |
+| e2e-oob         | 14.901        | 0.82          | 0.928          | 0.538          | 0.283          | 3.188          |
 | casc-oob        | **17.692**        | **0.88**          | **0.975**          | **0.619**          | **0.338**         | **3.604**          |
-| casc-ft-best    | 15.062        | 0.709         | 0.785          | 0.599          | 0.323          | 3.435          |
+| casc-ft-best-val-acc    | 15.062        | 0.709         | 0.785          | 0.599          | 0.323          | 3.435          |
 | casc-ft-1-epoch | 14.930        | 0.705         | 0.784          | 0.593          | 0.318          | 3.386          |
 | casc-ft-5-epoch | 14.383        | 0.702         | 0.784          | 0.601          | 0.314          | 3.428          |
 | casc-ft-low-lr  | 13.031        | 0.636         | 0.722          | 0.570          | 0.281          | 3.298          |
 
-aa
+Our results show that the cascading systems still outperform their e2e counterparts, and the e2e systems are unable to overcome the cascading systems’ advantages, including the
+large quantities of training data available for text-based models and high quality pretrained text-based models. Additionally, our qualitative analysis revealed that ASR-BLEU scores do not always perfectly correlate with human judgements, meaning ASR-BLEU alone is insufficient for the holistic evaluation of S2ST systems. 
+
+_Please refer to the [project report](https://github.com/Aadit3003/s2st-cascading-e2e/blob/8a1be02494e6ecac6c0db413026a399bdf916a9b/report.pdf) for more detail._
 
 ## Directory Structure
 * cvss-c_en_wavegan_hubert_vocoder - Contains the config file for the Vocoder.
