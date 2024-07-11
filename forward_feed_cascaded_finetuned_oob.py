@@ -28,6 +28,14 @@ from espnet_model_zoo.downloader import ModelDownloader
 from espnet2.bin.asr_inference import Speech2Text as asr
 from espnet2.layers.create_adapter_fn import create_lora_adapter
 from espnet_model_zoo.downloader import ModelDownloader
+from sacrebleu.metrics import BLEU
+import evaluate
+from sonar.inference_pipelines.text import TextToEmbeddingModelPipeline
+from sonar.models.blaser.loader import load_blaser_model
+from sacrebleu.metrics import BLEU
+
+from utils.macro_average_results import macro_average_translation_metrics
+from expanded_translation_metrics import generate_metrics_for_file_vectorized
 
 DATA_DIRECTORY = "/data/shire/data/aaditd/"
 
@@ -229,7 +237,6 @@ def main():
         beam_size=5,
         ctc_weight=0.0,
         maxlenratio=0.0,
-        # below are default values which can be overwritten in __call__
         lang_sym="<eng>",
         task_sym="<asr>",
         predict_time=False
@@ -247,6 +254,7 @@ def main():
 
         ref_text = Gold_Dict[filename]
         
+    # Forward-feed the model
         pred_text = forwadrd_cascaded_model(speech2text_model = speech2text_instance, 
                         speech2language = s2l, 
                         text2speech_model = text2speech_instance, 
@@ -256,23 +264,47 @@ def main():
                         lora_target = LORA_TARGET, 
                         finetuned_s2t_model_path = FINETUNED_MODEL_PATH)
 
-        score = bleu_metric.sentence_score(text_normalizer(pred_text), [text_normalizer(ref_text)])
-
-        output_csv["Prediction"].append(text_normalizer(pred_text))
-        output_csv["Gold"].append(text_normalizer(ref_text))
-        output_csv['ASR_BLEU'].append(score)
-        output_csv['File'].append(filename)
+        output_csv["pred_text"].append(text_normalizer(pred_text))
+        output_csv["ref_text"].append(text_normalizer(ref_text))
+        output_csv['file'].append(filename)
         
         count += 1
         if count % 100 == 0: # Save every 100 iterations (optional)
             print(f"        {count} DONE!")
             df2 = pd.DataFrame(output_csv)
-            df2.to_csv(f"./results/casc_{cascaded_model_inference_mode}_1e-7_1_epoch_results/finetuned_output_{count}.csv")
+            df2.to_csv(f"./results/casc_{cascaded_model_inference_mode}_results/casc_output_{count}.csv")
 
 
     results_df = pd.DataFrame(output_csv)
-    results_df.to_csv(f"./results/casc_{cascaded_model_inference_mode}_1e-7_1_epoch_results/finetuned_output_final.csv")
+    RESULTS_PATH = f"./results/casc_{cascaded_model_inference_mode}_results/casc_output_final.csv"
+    results_df.to_csv(RESULTS_PATH)
     
+    # Calculate the other Translation metrics
+    
+    bleu_metric = BLEU(effective_order=True)
+    blaser_metric = load_blaser_model("blaser_2_0_qe").eval()
+    text_embedder = TextToEmbeddingModelPipeline(encoder="text_sonar_basic_encoder", tokenizer="text_sonar_basic_encoder")
+    meteor_metric = evaluate.load('meteor')
+    comet_metric = evaluate.load('comet')
+    
+    expanded_results_df = generate_metrics_for_file_vectorized(filename=RESULTS_PATH, 
+                                                               bleu=bleu_metric,
+                                                               comet=comet_metric,
+                                                               meteor=meteor_metric,
+                                                               blaser=blaser_metric, 
+                                                               text_embedder=text_embedder)
+    
+    # Write the Macro-Averaged metrics to a results file
+    MACRO_RESULTS_PATH = f"./results/casc_{cascaded_model_inference_mode}_results/macro_avg_metrics.txt"
+    avg_asr, avg_bp, avg_ratio, avg_comet, avg_meteor, avg_blaser = macro_average_translation_metrics(expanded_results_df)
+    with open(MACRO_RESULTS_PATH, "w") as file:
+        file.write(f"ASR BLEU: {avg_asr}\n")
+        file.write(f"BP: {avg_bp}\n")
+        file.write(f"HRR: {avg_ratio}\n")
+        file.write(f"COMET: {avg_comet}\n")
+        file.write(f"METEOR: {avg_meteor}\n")
+        file.write(f"BLASER 2.0: {avg_blaser}\n")
+
     print("DONE!!")
     
 if __name__ == "__main__":

@@ -8,6 +8,10 @@ from pydub.utils import mediainfo
 from multiprocessing import Pool
 
 def convert_file_speech_rate(input_file):
+    """
+    Converts the sampling rate of the specified audio file to 16KHz. Used prior
+    to running either of the forward_feed modules.
+    """
     
     converted_data_path = "/data/shire/data/aaditd/speech_data/source_dataset/clips_16"
     output_file = os.path.join(converted_data_path, os.path.basename(input_file))

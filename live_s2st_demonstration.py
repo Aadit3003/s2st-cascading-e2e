@@ -37,9 +37,9 @@ from expanded_translation_metrics import comet_score_vectorized, blaser_score_ve
 from utils.macro_average_results import segment_bleu_score_string
 from forward_feed_cascaded_finetuned_oob import forwadrd_cascaded_model, text_normalizer
 from forward_feed_e2e import forward_e2e_model
+from expanded_translation_metrics import generate_metrics_for_file_vectorized
 
 # CONSTANTS
-
 DATA_DIRECTORY = "/data/shire/data/aaditd/"
   
 SOURCE_PATH = f"{DATA_DIRECTORY}speech_data/source_dataset/clips/"
@@ -55,17 +55,6 @@ FINETUNED_MODEL_PATH = f"{DATA_DIRECTORY}speech_data/exp-finetuned/2epoch.pth"
 VOCODER_PATH = "./cvss-c_en_wavegan_hubert_vocoder/checkpoint-450000steps.pkl"
 TTS_MODEL_PATH = ".tts_multi-speaker_model/exp/tts_train_full_band_multi_spk_vits_raw_phn_tacotron_g2p_en_no_space/train.total_count.ave_10best.pth"
 TTS_TRAIN_CONFIG_PATH = "./tts_config.yaml"
-
-
-def score_texts_with_all_metrics(source_texts, ref_texts, pred_texts, bleu, blaser, text_embedder, meteor, comet):
-   
-   list_asr_bleu = [segment_bleu_score_string(str(bleu.sentence_score(text_normalizer(p), [text_normalizer(r)]) )  ) for p, r in zip(pred_texts, ref_texts)]
-   list_comet = comet_score_vectorized(pred_texts, ref_texts, source_texts, comet)
-   list_meteor = [meteor_score_vectorized(p, r, meteor) for p, r in zip(pred_texts, ref_texts)]
-   list_blaser = blaser_score_vectorized(source_texts=source_texts, pred_texts=pred_texts, blaser=blaser, text_embedder=text_embedder)
-
-   return list_asr_bleu, list_comet, list_meteor, list_blaser
-
 
 def main():
    # Metrics Models!
@@ -167,33 +156,20 @@ def main():
    prediction_texts = [pred_text_e2e, pred_text_casc_oob, pred_text_casc_fine]
    source_texts = [SOURCE_TEXT for _ in range(3)]
    reference_texts = [REF_TEXT for _ in range(3)]
-
+   
+   prediction_df = pd.DataFrame({"source_text": source_texts,
+                      "ref_text": reference_texts,
+                      "pred_text": prediction_texts})
+   demo_prediction_path = f"{PREDICTION_PATH}demo_predictions.csv"
+   prediction_df.to_csv(demo_prediction_path)
+   
    # EVALUATION
-   list_asr_bleu, list_comet, list_meteor, list_blaser = score_texts_with_all_metrics(source_texts=source_texts,
-                   pred_texts=prediction_texts,
-                   ref_texts=reference_texts,
-                   bleu=bleu_metric,
-                   blaser=blaser_metric,
-                   text_embedder=text_embedder,
-                   meteor=meteor_metric,
-                   comet=comet_metric)
-  
-   list_bleu = [a for a, _, _ in list_asr_bleu]
-   list_bp = [b for _, b, _ in list_asr_bleu]
-   list_ratio = [c for _, _, c in list_asr_bleu]
-  
-   # SAVE RESULTS
-   df_final = pd.DataFrame({"Filename": [demo_sample_filename for _ in range(3)],
-               "Source_Text": source_texts,
-               "Pred_Text": prediction_texts,
-               "Ref_Text": reference_texts,
-               "ASR_BLEU": list_bleu,
-               "BP": list_bp,
-               "Ratio": list_ratio,
-               "COMET": list_comet,
-               "METEOR": list_meteor,
-               "BLASER2": list_blaser
-           })
+   df_final = generate_metrics_for_file_vectorized(filename=demo_prediction_path,
+                                                   bleu=bleu_metric,
+                                                   comet=comet_metric,
+                                                   meteor=meteor_metric,
+                                                   blaser=blaser_metric,
+                                                   text_embedder=text_embedder)
   
    print("Step 4 DONE: Evaluation metrics calculated")
    df_final.to_csv(f"{PREDICTION_PATH}metrics.csv")

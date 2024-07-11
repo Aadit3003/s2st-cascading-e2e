@@ -17,6 +17,13 @@ from espnet_model_zoo.downloader import ModelDownloader
 from espnet_recipe_scripts.s2st_inference import Speech2Speech
 from espnet2.bin.asr_inference import Speech2Text as asr
 from sacrebleu.metrics import BLEU
+import evaluate
+from sonar.inference_pipelines.text import TextToEmbeddingModelPipeline
+from sonar.models.blaser.loader import load_blaser_model
+from sacrebleu.metrics import BLEU
+
+from utils.macro_average_results import macro_average_translation_metrics
+from expanded_translation_metrics import generate_metrics_for_file_vectorized
 
 DATA_DIRECTORY = "/data/shire/data/aaditd/"
 
@@ -27,7 +34,6 @@ DEV_TARGET_DATASET_PATH = "./dev_dataset/dev_target.tsv" # Gold Reference
 DEV_SOURCE_DATASET_PATH = "./dev_dataset/dev_source.tsv"
 
 VOCODER_PATH = "./cvss-c_en_wavegan_hubert_vocoder/checkpoint-450000steps.pkl"
-
 
 def text_normalizer(text):
     text = text.lower()
@@ -125,23 +131,46 @@ def main():
                                  asr_model = asr_instance, 
                                  current_filename = filename)
         
-        score = bleu_metric.sentence_score(text_normalizer(text), [text_normalizer(ref_text)])
-
-        output_csv["Prediction"].append(text_normalizer(text))
-        output_csv["Gold"].append(text_normalizer(ref_text))
-        output_csv['ASR_BLEU'].append(score)
-        output_csv['File'].append(filename)
-
+        output_csv["pred_text"].append(text_normalizer(text))
+        output_csv["ref_text"].append(text_normalizer(ref_text))
+        output_csv['file'].append(filename)
 
         count += 1
         if count%100 == 0: # Save every 100 iterations (optional)
-            print(f"{i} files done!!")
+            print(f"{count} files done!!")
             df2 = pd.DataFrame(output_csv)
-            df2.to_csv(f".results/e2e_results/e2e_output_{i}.csv")
+            df2.to_csv(f".results/e2e_results/e2e_output_{count}.csv")
 
 
     results_df = pd.DataFrame(output_csv)
-    results_df.to_csv("./results/e2e_results/e2e_output_final.csv")
+    RESULTS_PATH = "./results/e2e_results/e2e_output_final.csv"
+    results_df.to_csv(RESULTS_PATH)
+    
+    # Calculate the other Translation metrics
+    
+    bleu_metric = BLEU(effective_order=True)
+    blaser_metric = load_blaser_model("blaser_2_0_qe").eval()
+    text_embedder = TextToEmbeddingModelPipeline(encoder="text_sonar_basic_encoder", tokenizer="text_sonar_basic_encoder")
+    meteor_metric = evaluate.load('meteor')
+    comet_metric = evaluate.load('comet')
+    
+    expanded_results_df = generate_metrics_for_file_vectorized(filename=RESULTS_PATH, 
+                                                               bleu=bleu_metric,
+                                                               comet=comet_metric,
+                                                               meteor=meteor_metric,
+                                                               blaser=blaser_metric, 
+                                                               text_embedder=text_embedder)
+    
+    # Write the Macro-Averaged metrics to a results file
+    MACRO_RESULTS_PATH = "./results/e2e_results/macro_avg_metrics.txt"
+    avg_asr, avg_bp, avg_ratio, avg_comet, avg_meteor, avg_blaser = macro_average_translation_metrics(expanded_results_df)
+    with open(MACRO_RESULTS_PATH, "w") as file:
+        file.write(f"ASR BLEU: {avg_asr}\n")
+        file.write(f"BP: {avg_bp}\n")
+        file.write(f"HRR: {avg_ratio}\n")
+        file.write(f"COMET: {avg_comet}\n")
+        file.write(f"METEOR: {avg_meteor}\n")
+        file.write(f"BLASER 2.0: {avg_blaser}\n")
 
     print("DONE!!")
     
