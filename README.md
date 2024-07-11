@@ -17,6 +17,26 @@ This project was completed under the guidance of Prof. Shinji Watanabe, at LTI, 
 aa
 
 ## Directory Structure
+* cvss-c_en_wavegan_hubert_vocoder -
+* dev_dataset -
+* espnet_recipe_scripts -
+* results -
+* tts_multi_speaker_model - 
+* utils -
+ * macro_average_results.py -
+ * sampling_rate_converter.py - 
+
+  expanded_translation_metrics.py -
+  finetune_s2t.py -
+  forward_feed_cascaded_finetuned_oob.py - 
+  forward_feed_e2e.py - 
+  live_s2st_demonstration.py - 
+
+tts_config.yaml
+lora_config.yaml
+
+environment.txt
+report.pdf
 
 Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not included due to their size, however all config files are in the respective directories.
 
@@ -33,13 +53,6 @@ Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not inclu
   * Cascaded oob model: ```python forward_feed_cascaded_finetuned_oob.py --inference_mode=oob```
   * Cascaded finetuned model: ```python forward_feed_cascaded_finetuned_oob.py --inference_mode=finetuned```
 * Run the Demonstration:
+  * The demo requires the finetuning step to have been completed prior.
   * Select a single file from the CVSS-C es-en dataset to inference and change the 'demo_sample_filename' variable.
   * Run the demo: ```python live_s2t_demonstration.py```
-
-## TO DO
-
-1. Rename the files (DONE)
-2. Write File description docstrings (DONE)
-3. Cleanup Code - Main Function, paths, function names etc. (DONE)
-4. Write Function description docstrings (DONE)
-5. Finish writing Readme!
