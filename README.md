@@ -18,8 +18,7 @@ aa
 
 ## Directory Structure
 
-aa
-
+Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not included due to their size, however all config files are in the respective directories.
 
 ## Run Commands
 
