@@ -22,17 +22,24 @@ Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not inclu
 
 ## Run Commands
 
-Environment Setup
-Inference the Models
-Fine-tune the Cascaded model
-Run the Demo
-
-
+* Environment Setup:
+  * Since this project extensively uses espnet recipes, refer to the following [installation](https://github.com/espnet/espnet) instructions.
+* Fine-tune the Cascaded model on CoVoST 2 data:
+  * Download the CoVoST 2 es_en [dataset]((https://huggingface.co/datasets/facebook/covost2)) (edit the corresponding path variable in the script).
+  * ```python finetune_s2t.py```
+* Inference the Models on the dev dataset and calculate all metrics
+  * Download the appropriate audio files in the CVSS-C es-en dev dataset from the [CommonVoice](https://commonvoice.mozilla.org/en/datasets) release version 4.
+  * End-to-end model: ```python forward_feed_e2e.py```
+  * Cascaded oob model: ```python forward_feed_cascaded_finetuned_oob.py --inference_mode=oob```
+  * Cascaded finetuned model: ```python forward_feed_cascaded_finetuned_oob.py --inference_mode=finetuned```
+* Run the Demonstration:
+  * Select a single file from the CVSS-C es-en dataset to inference and change the 'demo_sample_filename' variable.
+  * Run the demo: ```python live_s2t_demonstration.py```
 
 ## TO DO
 
 1. Rename the files (DONE)
 2. Write File description docstrings (DONE)
 3. Cleanup Code - Main Function, paths, function names etc. (DONE)
-4. Write Function description docstrings
+4. Write Function description docstrings (DONE)
 5. Finish writing Readme!
