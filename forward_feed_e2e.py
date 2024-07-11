@@ -23,7 +23,7 @@ from sonar.models.blaser.loader import load_blaser_model
 from sacrebleu.metrics import BLEU
 
 from utils.macro_average_results import macro_average_translation_metrics
-from expanded_translation_metrics import generate_metrics_for_file_vectorized
+from expanded_translation_metrics import generate_metrics_for_file_vectorized, text_normalizer
 
 DATA_DIRECTORY = "/data/shire/data/aaditd/"
 
@@ -35,42 +35,53 @@ DEV_SOURCE_DATASET_PATH = "./dev_dataset/dev_source.tsv"
 
 VOCODER_PATH = "./cvss-c_en_wavegan_hubert_vocoder/checkpoint-450000steps.pkl"
 
-def text_normalizer(text):
-    text = text.lower()
-    return text.translate(str.maketrans('', '', string.punctuation))
-
 def forward_e2e_model(speech2speech, asr_model, current_filename):
+    """
+    Forward-feeds the end-to-end Speech-to-Speech translation model
+    on a source audio file, writes the predicted translation wav file
+    to the PREDICTION_PATH, and returns the predicted translation text
+    (Using an ASR model).
+    
+    This function is reused in the live_s2st_demonstration.py module.
+    
+    Args:
+        speech2speech: The instance of the pre-trained end-to-end S2ST model.
+        asr_model: The instance of the ASR model used for metric calculations further.
+        current_filename: The current source audio file to be translated.
+    
+    Returns:
+        The transcribed text (using the ASR model) from the predicted audio translation of the S2ST model.
+    """
 
-   global PREDICTION_PATH
-   global SOURCE_PATH
-   start_time = time.time()
-   a = 0
-   fs = 16000
-   speech, rate = sf.read(f"{SOURCE_PATH}{current_filename}")
-   speech = librosa.resample(speech, rate, fs)
-   tensor_speech = torch.tensor(speech, dtype=torch.double).unsqueeze(0).float()
-
-
-   length = tensor_speech.new_full([1], dtype=torch.long, fill_value=tensor_speech.size(1))
-   output_dict = speech2speech(tensor_speech, length)
-
-
-   output_wav = output_dict["wav"].cpu().numpy()
-   extra = "_e2e_oob.wav"
-   title = current_filename + extra
-   sf.write(
-      
-       f"{PREDICTION_PATH}{title}",
-       output_wav,
-       fs,
-       "PCM_16",
-   )
-#    print(f"Saved output for E2E OOB Model!! Took {round(time.time() - start_time, 2)} seconds!")
-
-   pred_text, *_ = asr_model(output_wav)[0]
+    global PREDICTION_PATH
+    global SOURCE_PATH
+    
+    fs = 16000
+    speech, rate = sf.read(f"{SOURCE_PATH}{current_filename}")
+    speech = librosa.resample(speech, rate, fs)
+    tensor_speech = torch.tensor(speech, dtype=torch.double).unsqueeze(0).float()
 
 
-   return pred_text
+    length = tensor_speech.new_full([1], dtype=torch.long, fill_value=tensor_speech.size(1))
+    output_dict = speech2speech(tensor_speech, length)
+
+
+    output_wav = output_dict["wav"].cpu().numpy()
+    extra = "_e2e_oob.wav"
+    title = current_filename + extra
+    sf.write(
+        
+        f"{PREDICTION_PATH}{title}",
+        output_wav,
+        fs,
+        "PCM_16",
+    )
+    #    print(f"Saved output for E2E OOB Model!! Took {round(time.time() - start_time, 2)} seconds!")
+
+    pred_text, *_ = asr_model(output_wav)[0]
+
+
+    return pred_text
 
 def main():
     

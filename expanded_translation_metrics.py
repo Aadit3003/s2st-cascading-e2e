@@ -1,10 +1,8 @@
 """ This module contains the functions used to compute the following Speech
-Translation metrics:- COMET, METEOR, BLASER.
+Translation metrics:- ASR BLEU (and BP, HRR), COMET, METEOR, and BLASER 2.0.
 
-These are in addition to the ASR-BLEU score that is calculated in the forward_feed
-or live_s2st_demonstration modules. This module is called after inferencing the S2ST
-system and is used to create a csv file with all 4 metrics for each sample in the dev
-dataset.
+This module is called after inferencing the S2ST system and is used to create 
+a csv file with all 4 metrics for each sample in the dev dataset.
 """
 import numpy as np
 import pandas as pd

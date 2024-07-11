@@ -1,5 +1,5 @@
 """ This module contains the code to fine-tune the Speech2Text component of the 
-Cascaded S2ST system on the CVSS-C dataset.
+Cascaded S2ST system on the CVSS-C dataset (i.e. the CoVoST 2 dataset).
 
 This is done prior to running the forward_feed_cascaded_finetuned.py script, to 
 ensure a fairer comparison with the end-to-end model (pre-trained on CVSS-C).

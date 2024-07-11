@@ -35,7 +35,7 @@ from sonar.models.blaser.loader import load_blaser_model
 from sacrebleu.metrics import BLEU
 
 from utils.macro_average_results import macro_average_translation_metrics
-from expanded_translation_metrics import generate_metrics_for_file_vectorized
+from expanded_translation_metrics import generate_metrics_for_file_vectorized, text_normalizer
 
 DATA_DIRECTORY = "/data/shire/data/aaditd/"
 
@@ -47,10 +47,6 @@ DEV_TARGET_DATASET_PATH = "./dev_dataset/dev_target.tsv" # Gold Reference
 DEV_SOURCE_DATASET_PATH = "./dev_dataset/dev_source.tsv"
 FINETUNED_MODEL_PATH = f"{DATA_DIRECTORY}speech_data/exp_learning_rate_1e-7/1epoch.pth"
 
-def text_normalizer(text):
-    text = text.lower()
-    return text.translate(str.maketrans('', '', string.punctuation))
-
 def forwadrd_cascaded_model(speech2text_model, 
                         speech2language, 
                         text2speech_model, 
@@ -59,109 +55,131 @@ def forwadrd_cascaded_model(speech2text_model,
                         use_finetuned = False, 
                         lora_target = None, 
                         finetuned_s2t_model_path = None):
+    """
+    Forward-feeds the cascaded Speech-to-Speech translation (S2ST) 
+    system on a source audio file, writes the predicted translation wav file
+    to the PREDICTION_PATH, and returns the predicted translation text
+    (Using an ASR model). Users can either choose the out-of-the-box S2T model
+    or the S2T model fine-tuned on CoVoST 2.
+    
+    This function is reused in the live_s2st_demonstration.py module.
 
-   start_time = time.time()
+    Args:
+    The S2ST system:
+        speech2text_model: The instance of the S2T translation model.
+        speech2language: The speech2language s2l code.
+        text2speech_model: The instance of the TTS model.
+        
+        asr_model: The instance of the ASR model, usef for downstream evaluation.
+        current_filename: The current source audio file to be translated.
+        use_finetuned (bool, optional): Whether or not to use the finetuned S2T model. Defaults to False (i.e to use the out-of-the-box model).
+        lora_target (list[str], optional): The list of names of layers in the fine-tuned model that used the LORA adapter while being fine-tuned.
+        finetuned_s2t_model_path (str, optional): The path to the finetuned model. (Only if use_finetuned is set to True)
 
-   if use_finetuned == True:
-       create_lora_adapter(speech2text_model.s2t_model, target_modules=lora_target, rank = 4)
-       speech2text_model.s2t_model.eval()
-       speech2text_model.s2t_model.load_state_dict(torch.load(finetuned_s2t_model_path))
-       
-       PREDICTION_PATH = PREDICTION_PATH_FINETUNED
-   else:
-       PREDICTION_PATH = PREDICTION_PATH_OOB
+    Returns:
+        The transcribed text (using the ASR model) from the predicted audio translation of the S2ST model.
+    """
 
+    start_time = time.time()
 
-   spembs = None
-   if text2speech_model.use_spembs:
-       xvector_ark = [p for p in glob.glob(f"tts_multi-speaker_model/dump/**/spk_xvector.ark", recursive=True) if "tr" in p][0]
-       xvectors = {k: v for k, v in kaldiio.load_ark(xvector_ark)}
-       spks = list(xvectors.keys())
-
-       random_spk_idx = np.random.randint(0, len(spks))
-       spk = spks[random_spk_idx]
-       spembs = xvectors[spk]
-       print(f"selected spk, x-vector: {spk}")
-       
-   sids = None
-   if text2speech_model.use_sids:
-       spk2sid = glob.glob(f"tts_multi-speaker_model/dump/**/spk2sid", recursive=True)[0]
-       with open(spk2sid) as f:
-           lines = [line.strip() for line in f.readlines()]
-       sid2spk = {int(line.split()[1]): line.split()[0] for line in lines}
-
-       sids = np.array(np.random.randint(1, len(sid2spk)))
-       print (sids)
-       spk = "p237"
-       print(f"selected spk, speaker-id: {spk}")
-       
-   speech = None
-   if text2speech_model.use_speech:
-       speech = torch.randn(50000,) * 0.01
-  
-   iso_codes = ['abk', 'afr', 'amh', 'ara', 'asm', 'ast', 'aze', 'bak', 'bas', 'bel', 'ben', 'bos', 'bre', 'bul', 'cat', 'ceb', 'ces', 'chv', 'ckb', 'cmn', 'cnh', 'cym', 'dan', 'deu', 'dgd', 'div', 'ell', 'eng', 'epo', 'est', 'eus', 'fas', 'fil', 'fin', 'fra', 'frr', 'ful', 'gle', 'glg', 'grn', 'guj', 'hat', 'hau', 'heb', 'hin', 'hrv', 'hsb', 'hun', 'hye', 'ibo', 'ina', 'ind', 'isl', 'ita', 'jav', 'jpn', 'kab', 'kam', 'kan', 'kat', 'kaz', 'kea', 'khm', 'kin', 'kir', 'kmr', 'kor', 'lao', 'lav', 'lga', 'lin', 'lit', 'ltz', 'lug', 'luo', 'mal', 'mar', 'mas', 'mdf', 'mhr', 'mkd', 'mlt', 'mon', 'mri', 'mrj', 'mya', 'myv', 'nan', 'nep', 'nld', 'nno', 'nob', 'npi', 'nso', 'nya', 'oci', 'ori', 'orm', 'ory', 'pan', 'pol', 'por', 'pus', 'quy', 'roh', 'ron', 'rus', 'sah', 'sat', 'sin', 'skr', 'slk', 'slv', 'sna', 'snd', 'som', 'sot', 'spa', 'srd', 'srp', 'sun', 'swa', 'swe', 'swh', 'tam', 'tat', 'tel', 'tgk', 'tgl', 'tha', 'tig', 'tir', 'tok', 'tpi', 'tsn', 'tuk', 'tur', 'twi', 'uig', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'vot', 'wol', 'xho', 'yor', 'yue', 'zho', 'zul']
-   lang_names = ['Abkhazian', 'Afrikaans', 'Amharic', 'Arabic', 'Assamese', 'Asturian', 'Azerbaijani', 'Bashkir', 'Basa (Cameroon)', 'Belarusian', 'Bengali', 'Bosnian', 'Breton', 'Bulgarian', 'Catalan', 'Cebuano', 'Czech', 'Chuvash', 'Central Kurdish', 'Mandarin Chinese', 'Hakha Chin', 'Welsh', 'Danish', 'German', 'Dagaari Dioula', 'Dhivehi', 'Modern Greek (1453-)', 'English', 'Esperanto', 'Estonian', 'Basque', 'Persian', 'Filipino', 'Finnish', 'French', 'Northern Frisian', 'Fulah', 'Irish', 'Galician', 'Guarani', 'Gujarati', 'Haitian', 'Hausa', 'Hebrew', 'Hindi', 'Croatian', 'Upper Sorbian', 'Hungarian', 'Armenian', 'Igbo', 'Interlingua (International Auxiliary Language Association)', 'Indonesian', 'Icelandic', 'Italian', 'Javanese', 'Japanese', 'Kabyle', 'Kamba (Kenya)', 'Kannada', 'Georgian', 'Kazakh', 'Kabuverdianu', 'Khmer', 'Kinyarwanda', 'Kirghiz', 'Northern Kurdish', 'Korean', 'Lao', 'Latvian', 'Lungga', 'Lingala', 'Lithuanian', 'Luxembourgish', 'Ganda', 'Luo (Kenya and Tanzania)', 'Malayalam', 'Marathi', 'Masai', 'Moksha', 'Eastern Mari', 'Macedonian', 'Maltese', 'Mongolian', 'Maori', 'Western Mari', 'Burmese', 'Erzya', 'Min Nan Chinese', 'Nepali (macrolanguage)', 'Dutch', 'Norwegian Nynorsk', 'Norwegian Bokmål', 'Nepali (individual language)', 'Pedi', 'Nyanja', 'Occitan (post 1500)', 'Oriya (macrolanguage)', 'Oromo', 'Odia', 'Panjabi', 'Polish', 'Portuguese', 'Pushto', 'Ayacucho Quechua', 'Romansh', 'Romanian', 'Russian', 'Yakut', 'Santali', 'Sinhala', 'Saraiki', 'Slovak', 'Slovenian', 'Shona', 'Sindhi', 'Somali', 'Southern Sotho', 'Spanish', 'Sardinian', 'Serbian', 'Sundanese', 'Swahili (macrolanguage)', 'Swedish', 'Swahili (individual language)', 'Tamil', 'Tatar', 'Telugu', 'Tajik', 'Tagalog', 'Thai', 'Tigre', 'Tigrinya', 'Toki Pona', 'Tok Pisin', 'Tswana', 'Turkmen', 'Turkish', 'Twi', 'Uighur', 'Ukrainian', 'Umbundu', 'Urdu', 'Uzbek', 'Vietnamese', 'Votic', 'Wolof', 'Xhosa', 'Yoruba', 'Yue Chinese', 'Chinese', 'Zulu']
+    if use_finetuned == True:
+        create_lora_adapter(speech2text_model.s2t_model, target_modules=lora_target, rank = 4)
+        speech2text_model.s2t_model.eval()
+        speech2text_model.s2t_model.load_state_dict(torch.load(finetuned_s2t_model_path))
+        
+        PREDICTION_PATH = PREDICTION_PATH_FINETUNED
+    else:
+        PREDICTION_PATH = PREDICTION_PATH_OOB
 
 
-   task_codes = ['asr', 'st_ara', 'st_cat', 'st_ces', 'st_cym', 'st_deu', 'st_eng', 'st_est', 'st_fas', 'st_fra', 'st_ind', 'st_ita', 'st_jpn', 'st_lav', 'st_mon', 'st_nld', 'st_por', 'st_ron', 'st_rus', 'st_slv', 'st_spa', 'st_swe', 'st_tam', 'st_tur', 'st_vie', 'st_zho']
-   task_names = ['Automatic Speech Recognition', 'Translate to Arabic', 'Translate to Catalan', 'Translate to Czech', 'Translate to Welsh', 'Translate to German', 'Translate to English', 'Translate to Estonian', 'Translate to Persian', 'Translate to French', 'Translate to Indonesian', 'Translate to Italian', 'Translate to Japanese', 'Translate to Latvian', 'Translate to Mongolian', 'Translate to Dutch', 'Translate to Portuguese', 'Translate to Romanian', 'Translate to Russian', 'Translate to Slovenian', 'Translate to Spanish', 'Translate to Swedish', 'Translate to Tamil', 'Translate to Turkish', 'Translate to Vietnamese', 'Translate to Chinese']
+    spembs = None
+    if text2speech_model.use_spembs:
+        xvector_ark = [p for p in glob.glob(f"tts_multi-speaker_model/dump/**/spk_xvector.ark", recursive=True) if "tr" in p][0]
+        xvectors = {k: v for k, v in kaldiio.load_ark(xvector_ark)}
+        spks = list(xvectors.keys())
+
+        random_spk_idx = np.random.randint(0, len(spks))
+        spk = spks[random_spk_idx]
+        spembs = xvectors[spk]
+        print(f"selected spk, x-vector: {spk}")
+        
+    sids = None
+    if text2speech_model.use_sids:
+        spk2sid = glob.glob(f"tts_multi-speaker_model/dump/**/spk2sid", recursive=True)[0]
+        with open(spk2sid) as f:
+            lines = [line.strip() for line in f.readlines()]
+        sid2spk = {int(line.split()[1]): line.split()[0] for line in lines}
+
+        sids = np.array(np.random.randint(1, len(sid2spk)))
+        print (sids)
+        spk = "p237"
+        print(f"selected spk, speaker-id: {spk}")
+        
+    speech = None
+    if text2speech_model.use_speech:
+        speech = torch.randn(50000,) * 0.01
+    
+    iso_codes = ['abk', 'afr', 'amh', 'ara', 'asm', 'ast', 'aze', 'bak', 'bas', 'bel', 'ben', 'bos', 'bre', 'bul', 'cat', 'ceb', 'ces', 'chv', 'ckb', 'cmn', 'cnh', 'cym', 'dan', 'deu', 'dgd', 'div', 'ell', 'eng', 'epo', 'est', 'eus', 'fas', 'fil', 'fin', 'fra', 'frr', 'ful', 'gle', 'glg', 'grn', 'guj', 'hat', 'hau', 'heb', 'hin', 'hrv', 'hsb', 'hun', 'hye', 'ibo', 'ina', 'ind', 'isl', 'ita', 'jav', 'jpn', 'kab', 'kam', 'kan', 'kat', 'kaz', 'kea', 'khm', 'kin', 'kir', 'kmr', 'kor', 'lao', 'lav', 'lga', 'lin', 'lit', 'ltz', 'lug', 'luo', 'mal', 'mar', 'mas', 'mdf', 'mhr', 'mkd', 'mlt', 'mon', 'mri', 'mrj', 'mya', 'myv', 'nan', 'nep', 'nld', 'nno', 'nob', 'npi', 'nso', 'nya', 'oci', 'ori', 'orm', 'ory', 'pan', 'pol', 'por', 'pus', 'quy', 'roh', 'ron', 'rus', 'sah', 'sat', 'sin', 'skr', 'slk', 'slv', 'sna', 'snd', 'som', 'sot', 'spa', 'srd', 'srp', 'sun', 'swa', 'swe', 'swh', 'tam', 'tat', 'tel', 'tgk', 'tgl', 'tha', 'tig', 'tir', 'tok', 'tpi', 'tsn', 'tuk', 'tur', 'twi', 'uig', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'vot', 'wol', 'xho', 'yor', 'yue', 'zho', 'zul']
+    lang_names = ['Abkhazian', 'Afrikaans', 'Amharic', 'Arabic', 'Assamese', 'Asturian', 'Azerbaijani', 'Bashkir', 'Basa (Cameroon)', 'Belarusian', 'Bengali', 'Bosnian', 'Breton', 'Bulgarian', 'Catalan', 'Cebuano', 'Czech', 'Chuvash', 'Central Kurdish', 'Mandarin Chinese', 'Hakha Chin', 'Welsh', 'Danish', 'German', 'Dagaari Dioula', 'Dhivehi', 'Modern Greek (1453-)', 'English', 'Esperanto', 'Estonian', 'Basque', 'Persian', 'Filipino', 'Finnish', 'French', 'Northern Frisian', 'Fulah', 'Irish', 'Galician', 'Guarani', 'Gujarati', 'Haitian', 'Hausa', 'Hebrew', 'Hindi', 'Croatian', 'Upper Sorbian', 'Hungarian', 'Armenian', 'Igbo', 'Interlingua (International Auxiliary Language Association)', 'Indonesian', 'Icelandic', 'Italian', 'Javanese', 'Japanese', 'Kabyle', 'Kamba (Kenya)', 'Kannada', 'Georgian', 'Kazakh', 'Kabuverdianu', 'Khmer', 'Kinyarwanda', 'Kirghiz', 'Northern Kurdish', 'Korean', 'Lao', 'Latvian', 'Lungga', 'Lingala', 'Lithuanian', 'Luxembourgish', 'Ganda', 'Luo (Kenya and Tanzania)', 'Malayalam', 'Marathi', 'Masai', 'Moksha', 'Eastern Mari', 'Macedonian', 'Maltese', 'Mongolian', 'Maori', 'Western Mari', 'Burmese', 'Erzya', 'Min Nan Chinese', 'Nepali (macrolanguage)', 'Dutch', 'Norwegian Nynorsk', 'Norwegian Bokmål', 'Nepali (individual language)', 'Pedi', 'Nyanja', 'Occitan (post 1500)', 'Oriya (macrolanguage)', 'Oromo', 'Odia', 'Panjabi', 'Polish', 'Portuguese', 'Pushto', 'Ayacucho Quechua', 'Romansh', 'Romanian', 'Russian', 'Yakut', 'Santali', 'Sinhala', 'Saraiki', 'Slovak', 'Slovenian', 'Shona', 'Sindhi', 'Somali', 'Southern Sotho', 'Spanish', 'Sardinian', 'Serbian', 'Sundanese', 'Swahili (macrolanguage)', 'Swedish', 'Swahili (individual language)', 'Tamil', 'Tatar', 'Telugu', 'Tajik', 'Tagalog', 'Thai', 'Tigre', 'Tigrinya', 'Toki Pona', 'Tok Pisin', 'Tswana', 'Turkmen', 'Turkish', 'Twi', 'Uighur', 'Ukrainian', 'Umbundu', 'Urdu', 'Uzbek', 'Vietnamese', 'Votic', 'Wolof', 'Xhosa', 'Yoruba', 'Yue Chinese', 'Chinese', 'Zulu']
 
 
-   lang2code = dict(
-       [('Unknown', 'none')] + sorted(list(zip(lang_names, iso_codes)), key=lambda x: x[0])
-   )
-   task2code = dict(sorted(list(zip(task_names, task_codes)), key=lambda x: x[0]))
+    task_codes = ['asr', 'st_ara', 'st_cat', 'st_ces', 'st_cym', 'st_deu', 'st_eng', 'st_est', 'st_fas', 'st_fra', 'st_ind', 'st_ita', 'st_jpn', 'st_lav', 'st_mon', 'st_nld', 'st_por', 'st_ron', 'st_rus', 'st_slv', 'st_spa', 'st_swe', 'st_tam', 'st_tur', 'st_vie', 'st_zho']
+    task_names = ['Automatic Speech Recognition', 'Translate to Arabic', 'Translate to Catalan', 'Translate to Czech', 'Translate to Welsh', 'Translate to German', 'Translate to English', 'Translate to Estonian', 'Translate to Persian', 'Translate to French', 'Translate to Indonesian', 'Translate to Italian', 'Translate to Japanese', 'Translate to Latvian', 'Translate to Mongolian', 'Translate to Dutch', 'Translate to Portuguese', 'Translate to Romanian', 'Translate to Russian', 'Translate to Slovenian', 'Translate to Spanish', 'Translate to Swedish', 'Translate to Tamil', 'Translate to Turkish', 'Translate to Vietnamese', 'Translate to Chinese']
 
 
-   code2lang = dict([(v, k) for k, v in lang2code.items()])
+    lang2code = dict(
+        [('Unknown', 'none')] + sorted(list(zip(lang_names, iso_codes)), key=lambda x: x[0])
+    )
+    task2code = dict(sorted(list(zip(task_names, task_codes)), key=lambda x: x[0]))
 
 
-   src_lang = "Spanish"
-   task = "Translate to English"
-   beam_size = 5
-   long_form = False
-   text_prev = ""
-   task_sym = f'<{task2code[task]}>'
-   lang_code = lang2code[src_lang]
-   if lang_code == 'none':
-       lang_code = speech2language(speech)[0][0].strip()[1:-1]
-   lang_sym = f'<{lang_code}>'
-   speech2text_model.beam_search.beam_size = int(beam_size)
+    code2lang = dict([(v, k) for k, v in lang2code.items()])
 
 
+    src_lang = "Spanish"
+    task = "Translate to English"
+    beam_size = 5
+    long_form = False
+    text_prev = ""
+    task_sym = f'<{task2code[task]}>'
+    lang_code = lang2code[src_lang]
+    if lang_code == 'none':
+        lang_code = speech2language(speech)[0][0].strip()[1:-1]
+    lang_sym = f'<{lang_code}>'
+    speech2text_model.beam_search.beam_size = int(beam_size)
 
 
-   speech, rate = librosa.load(f"{SOURCE_PATH}{current_filename}", sr=16000) # speech has shape (len,); resample to 16k Hz
-   speech2text_model.maxlenratio = -min(300, int((len(speech) / rate) * 10))  # assuming 10 tokens per second
-   
-   translated_text = speech2text_model(speech, text_prev, lang_sym=lang_sym, task_sym=task_sym)[0][-2]
+    speech, rate = librosa.load(f"{SOURCE_PATH}{current_filename}", sr=16000) # speech has shape (len,); resample to 16k Hz
+    speech2text_model.maxlenratio = -min(300, int((len(speech) / rate) * 10))  # assuming 10 tokens per second
+    
+    translated_text = speech2text_model(speech, text_prev, lang_sym=lang_sym, task_sym=task_sym)[0][-2]
 
 
-   with torch.no_grad():
-       output_wav = text2speech_model(translated_text, speech=speech, spembs=spembs, sids=sids)["wav"].cpu()
+    with torch.no_grad():
+        output_wav = text2speech_model(translated_text, speech=speech, spembs=spembs, sids=sids)["wav"].cpu()
 
 
-   if use_finetuned == False:
-       extra = "_casc_oob.wav"
-   else:
-       extra = "_casv_finetuned.wav"
-   title = current_filename + extra
-   sf.write(f"{PREDICTION_PATH}{title}", output_wav.numpy(), text2speech_model.fs, "PCM_16")
+    if use_finetuned == False:
+        extra = "_casc_oob.wav"
+    else:
+        extra = "_casv_finetuned.wav"
+    title = current_filename + extra
+    sf.write(f"{PREDICTION_PATH}{title}", output_wav.numpy(), text2speech_model.fs, "PCM_16")
 
 
-   processed_speech, rate = sf.read(f"{PREDICTION_PATH}{title}")
-   processed_speech = librosa.resample(processed_speech, rate, 16000)
+    processed_speech, rate = sf.read(f"{PREDICTION_PATH}{title}")
+    processed_speech = librosa.resample(processed_speech, rate, 16000)
 
 
-   pred_text, *_ = asr_model(processed_speech)[0]
+    pred_text, *_ = asr_model(processed_speech)[0]
 
 
-   if use_finetuned == False:
-       print(f"Saved output for Cascaded OOB Model!! Took {round(time.time() - start_time, 2)} seconds!")
-   else:
-       print(f"Saved output for Cascaded Finetuned Model!! Took {round(time.time() - start_time, 2)} seconds!")
-  
-   return pred_text
+    if use_finetuned == False:
+        print(f"Saved output for Cascaded OOB Model!! Took {round(time.time() - start_time, 2)} seconds!")
+    else:
+        print(f"Saved output for Cascaded Finetuned Model!! Took {round(time.time() - start_time, 2)} seconds!")
+    
+    return pred_text
 
 def main():
     # Command Line choice of Finetuned vs. OOB model
