@@ -36,17 +36,17 @@ _Please refer to the [project report](https://github.com/Aadit3003/s2st-cascadin
     * macro_average_results.py - The script to macro average the 4 translation metrics across all dev dataset samples.
     * sampling_rate_converter.py - The script to convert all clips in the input dataset to a 16KHz sampling rate.
 
-  **expanded_translation_metrics.py** - The script to evaluate the prediction texts and return the 4 translation metrics (ASR BLEU, COMET, METEOR, BLASER 2.0)\
-  **finetune_s2t.py** - The script to finetune the S2T model on the CoVoST dataset.\
-  **forward_feed_cascaded_finetuned_oob.py** - The script to forward-feed the Cascaded S2ST model (oob/finetuned) on the CVSS-C dev dataset (with metrics).\
-  **forward_feed_e2e.py** - The script to forward-feed the End-to-end S2ST model on the CVSS-C dev dataset (with metrics).\
-  **live_s2st_demonstration.py** - The demonstration that compares the cascaded and end-to-end models on a single audio file.
+*  ```expanded_translation_metrics.py```  - The script to evaluate the prediction texts and return the 4 translation metrics (ASR BLEU, COMET, METEOR, BLASER 2.0)\
+*  ``` finetune_s2t.py``` - The script to finetune the S2T model on the CoVoST dataset.\
+* ```forward_feed_cascaded_finetuned_oob.py``` - The script to forward-feed the Cascaded S2ST model (oob/finetuned) on the CVSS-C dev dataset (with metrics).\
+* ```forward_feed_e2e.py``` - The script to forward-feed the End-to-end S2ST model on the CVSS-C dev dataset (with metrics).\
+* ```live_s2st_demonstration.py``` - The demonstration that compares the cascaded and end-to-end models on a single audio file.
 
-tts_config.yaml - The config file for the Text2Speech model. \
-lora_config.yaml - The config file for the LoRA adapter.
+* tts_config.yaml - The config file for the Text2Speech model. \
+* lora_config.yaml - The config file for the LoRA adapter.
 
-environment.txt - The virtual environment packages (with versions) listed explicitly. \
-report.pdf - The report containing details about experimental design and results. 
+* environment.txt - The virtual environment packages (with versions) listed explicitly. \
+* report.pdf - The report containing details about experimental design and results. 
 
 _Note: The model files (for the TTS model, Vocoder, S2T model etc.) are not included due to their size, however all config files are in the respective directories._
 
