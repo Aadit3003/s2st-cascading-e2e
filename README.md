@@ -8,7 +8,7 @@ This project was completed under the guidance of Prof. Shinji Watanabe, at LTI, 
 Comparison of the performance of E2E and Cascading S2ST Models on the CVSS-C Spanish-to-English test set. The baselines:- e2e-oob is the out-of-
 the-box end-to-end model and casc-oob is out-of-the-box cascading model. casc-ft models are the fine-tuned (via LoRA) cascading models:
 casc-ft-best (learning rate 1e-5, epoch 3); casc-ft-1-epoch (learning rate 1e-5, epoch 1); casc-ft-5-epoch (learning rate 1e-5, epoch 5); and
-casc-ft-low-lr (learning rate 1e-7, epoch 1). \
+casc-ft-low-lr (learning rate 1e-7, epoch 1).
 
 _BP is Brevity Penalty (scale 0-1), HRR is Hypothesis to Reference ratio (scale 0-1); ASR-BLEU (scale 1-100), COMET (scale 0-1), METEOR (scale 0-1), and BLASER2.0 (scale 1-5)_
 
