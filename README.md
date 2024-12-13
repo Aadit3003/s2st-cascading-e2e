@@ -33,8 +33,8 @@ _Please refer to the [project report](https://github.com/Aadit3003/s2st-cascadin
 * **results** - The csv outputs of the e2e, and cascaded models (oob, finetuned) with all 4 Translation metrics.
 * tts_multi_speaker_model - The exp folder contains the config file for the TTS Model.
 * utils:
- * macro_average_results.py - The script to macro average the 4 translation metrics across all dev dataset samples.
- * sampling_rate_converter.py - The script to convert all clips in the input dataset to a 16KHz sampling rate.
+    * macro_average_results.py - The script to macro average the 4 translation metrics across all dev dataset samples.
+    * sampling_rate_converter.py - The script to convert all clips in the input dataset to a 16KHz sampling rate.
 
   **expanded_translation_metrics.py** - The script to evaluate the prediction texts and return the 4 translation metrics (ASR BLEU, COMET, METEOR, BLASER 2.0)\
   **finetune_s2t.py** - The script to finetune the S2T model on the CoVoST dataset.\
